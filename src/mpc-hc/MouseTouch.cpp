@@ -389,16 +389,15 @@ bool CMouse::InternalOnXButtonDblClk(UINT nFlags, UINT nButton, const CPoint& po
 
 BOOL CMouse::InternalOnMouseWheel(UINT nFlags, short zDelta, const CPoint& point)
 {
-	bool handled =	zDelta > 0 ? OnButton(wmcmd::WUP, point) :
-					zDelta < 0 ? OnButton(wmcmd::WDOWN, point) :
-					FALSE;
+    bool handled =  zDelta > 0 ? OnButton(wmcmd::WUP, point) :
+                    zDelta < 0 ? OnButton(wmcmd::WDOWN, point) :
+                    FALSE;
 
-	if (handled)
-	{
-		return handled;
-	}
+    if (handled) {
+        return handled;
+    }
 
-	return m_pMainFrame->OnInternalMouseWheel(nFlags, zDelta, point);
+    return m_pMainFrame->OnInternalMouseWheel(nFlags, zDelta, point);
 }
 
 bool CMouse::SelectCursor(const CPoint& screenPoint, const CPoint& clientPoint, UINT nFlags)

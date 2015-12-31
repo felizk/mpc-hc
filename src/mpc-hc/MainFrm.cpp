@@ -779,8 +779,8 @@ CMainFrame::CMainFrame()
     , m_dLastVideoScaleFactor(0)
     , m_bExtOnTop(false)
     , m_bIsBDPlay(false)
-	, m_seekToTime(-1)
-	, m_bSeekShowOSD(false)
+    , m_seekToTime(-1)
+    , m_bSeekShowOSD(false)
 {
     // Don't let CFrameWnd handle automatically the state of the menu items.
     // This means that menu items without handlers won't be automatically
@@ -1824,15 +1824,12 @@ void CMainFrame::OnTimer(UINT_PTR nIDEvent)
                 g_bNoDuration = rtDur <= 0;
                 m_wndSeekBar.Enable(!g_bNoDuration);
                 m_wndSeekBar.SetRange(0, rtDur);
-                
-				if (m_seekToTime >= 0)
-				{
-					m_wndSeekBar.SetPos(m_seekToTime);
-				}
-				else
-				{
-					m_wndSeekBar.SetPos(rtNow);
-				}
+
+                if (m_seekToTime >= 0) {
+                    m_wndSeekBar.SetPos(m_seekToTime);
+                } else {
+                    m_wndSeekBar.SetPos(rtNow);
+                }
                 m_OSD.SetRange(0, rtDur);
                 m_OSD.SetPos(rtNow);
                 m_Lcd.SetMediaRange(0, rtDur);
@@ -2777,15 +2774,15 @@ void CMainFrame::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 
 BOOL CMainFrame::OnInternalMouseWheel(UINT nFlags, short zDelta, CPoint point)
 {
-	const auto& s = AfxGetAppSettings();
+    const auto& s = AfxGetAppSettings();
 
-	REFERENCE_TIME rtSeekTo = zDelta * -1000000i64;
+    REFERENCE_TIME rtSeekTo = zDelta * -1000000i64;
 
-	const REFERENCE_TIME rtPos = GetPos();
-	rtSeekTo += rtPos;
+    const REFERENCE_TIME rtPos = GetPos();
+    rtSeekTo += rtPos;
 
-	SeekTo(rtSeekTo);
-	return true;
+    SeekTo(rtSeekTo);
+    return true;
 }
 
 void CMainFrame::OnInitMenu(CMenu* pMenu)
@@ -13738,11 +13735,13 @@ void CMainFrame::SetAudioTrackIdx(int index)
 
 REFERENCE_TIME CMainFrame::GetPos() const
 {
-	if (GetLoadState() != MLS::LOADED)
-		return 0;
+    if (GetLoadState() != MLS::LOADED) {
+        return 0;
+    }
 
-	if (m_seekToTime >= 0)
-		return m_seekToTime;
+    if (m_seekToTime >= 0) {
+        return m_seekToTime;
+    }
 
     return m_wndSeekBar.GetPos();
 }
@@ -13811,42 +13810,39 @@ REFERENCE_TIME CMainFrame::GetClosestKeyFrame(REFERENCE_TIME rtTarget) const
 
 void CMainFrame::SeekTo(REFERENCE_TIME rt, bool bShowOSD /*= true*/)
 {
-	if (rt < 0) {
-		rt = 0;
-	}
+    if (rt < 0) {
+        rt = 0;
+    }
 
-	const auto& s = AfxGetAppSettings();
-	if (s.bUseDeferredSeek)
-	{
-		m_seekToTime = rt;
-		m_bSeekShowOSD = bShowOSD;
+    const auto& s = AfxGetAppSettings();
+    if (s.bUseDeferredSeek) {
+        m_seekToTime = rt;
+        m_bSeekShowOSD = bShowOSD;
 
-		if (!IsPlaybackCaptureMode()) {
-			__int64 start, stop;
-			m_wndSeekBar.GetRange(start, stop);
-			if (m_seekToTime > stop) {
-				m_seekToTime = stop;
-			}
-			m_wndStatusBar.SetStatusTimer(m_seekToTime, stop, IsSubresyncBarVisible(), GetTimeFormat());
+        if (!IsPlaybackCaptureMode()) {
+            __int64 start, stop;
+            m_wndSeekBar.GetRange(start, stop);
+            if (m_seekToTime > stop) {
+                m_seekToTime = stop;
+            }
+            m_wndStatusBar.SetStatusTimer(m_seekToTime, stop, IsSubresyncBarVisible(), GetTimeFormat());
 
-			if (bShowOSD) {
-				m_OSD.DisplayMessage(OSD_TOPLEFT, m_wndStatusBar.GetStatusTimer(), 1500);
-			}
-		}
+            if (bShowOSD) {
+                m_OSD.DisplayMessage(OSD_TOPLEFT, m_wndStatusBar.GetStatusTimer(), 1500);
+            }
+        }
 
-		m_timerOneTime.Subscribe(TimerOneTimeSubscriber::SEEK_TIMEOUT,
-			[this] { ActualSeekTo(this->m_seekToTime, this->m_bSeekShowOSD); },
-			500);
-	}
-	else 
-	{
-		ActualSeekTo(rt, bShowOSD);
-	}
+        m_timerOneTime.Subscribe(TimerOneTimeSubscriber::SEEK_TIMEOUT,
+                                 [this] { ActualSeekTo(this->m_seekToTime, this->m_bSeekShowOSD); },
+                                 500);
+    } else {
+        ActualSeekTo(rt, bShowOSD);
+    }
 }
 
 void CMainFrame::ActualSeekTo(REFERENCE_TIME rtPos, bool bShowOSD /*= true*/)
 {
-	m_seekToTime = -1;
+    m_seekToTime = -1;
 
     ASSERT(m_pMS != nullptr);
     if (m_pMS == nullptr) {
