@@ -53,7 +53,8 @@ public:
     int m_nOSDSize;
     CString m_strOSDFont;
 
-    BOOL m_fFastSeek;
+	BOOL m_fFastSeek;
+	BOOL m_bUseDeferredSeek;
     BOOL m_fShowChapters;
 
     BOOL m_fLCDSupport;

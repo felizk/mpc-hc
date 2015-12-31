@@ -182,7 +182,8 @@ public:
         DVBINFO_UPDATE,
         STATUS_ERASE,
         PLACE_FULLSCREEN_UNDER_ACTIVE_WINDOW,
-        AUTOFIT_TIMEOUT
+        AUTOFIT_TIMEOUT,
+		SEEK_TIMEOUT
     };
     OneTimeTimerPool<TimerOneTimeSubscriber> m_timerOneTime;
 
@@ -540,7 +541,8 @@ public:
     REFERENCE_TIME GetDur() const;
     bool GetNeighbouringKeyFrames(REFERENCE_TIME rtTarget, std::pair<REFERENCE_TIME, REFERENCE_TIME>& keyframes) const;
     REFERENCE_TIME GetClosestKeyFrame(REFERENCE_TIME rtTarget) const;
-    void SeekTo(REFERENCE_TIME rt, bool bShowOSD = true);
+	void SeekTo(REFERENCE_TIME rt, bool bShowOSD = true);
+	void ActualSeekTo(REFERENCE_TIME rt, bool bShowOSD = true);
     void SetPlayingRate(double rate);
 
     int SetupAudioStreams();
@@ -710,6 +712,7 @@ public:
     afx_msg LRESULT OnNcHitTest(CPoint point);
 
     afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
+	BOOL OnInternalMouseWheel(UINT nFlags, short zDelta, CPoint point);
 
     afx_msg void OnInitMenu(CMenu* pMenu);
     afx_msg void OnInitMenuPopup(CMenu* pPopupMenu, UINT nIndex, BOOL bSysMenu);
@@ -1087,6 +1090,10 @@ protected:
     CSize m_lastVideoSize;
 
     bool m_bExtOnTop; // 'true' if the "on top" flag was set by an external tool
+
+	REFERENCE_TIME	m_seekToTime;
+	bool			m_bSeekShowOSD;
+	time_t			m_tSeekTime;
 
 public:
     afx_msg UINT OnPowerBroadcast(UINT nPowerEvent, LPARAM nEventData);

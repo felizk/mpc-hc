@@ -256,6 +256,7 @@
 
 #define IDS_RS_FASTSEEK                     _T("FastSeek")
 #define IDS_RS_FASTSEEK_METHOD              _T("FastSeekMethod")
+#define IDS_RS_DEFERRED_SEEK                _T("UseDeferredSeek")
 #define IDS_RS_SHOW_CHAPTERS                _T("ShowChapters")
 
 #define IDS_RS_LCD_SUPPORT                  _T("LcdSupport")

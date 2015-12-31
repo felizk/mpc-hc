@@ -779,6 +779,8 @@ CMainFrame::CMainFrame()
     , m_dLastVideoScaleFactor(0)
     , m_bExtOnTop(false)
     , m_bIsBDPlay(false)
+	, m_seekToTime(-1)
+	, m_bSeekShowOSD(false)
 {
     // Don't let CFrameWnd handle automatically the state of the menu items.
     // This means that menu items without handlers won't be automatically
@@ -1822,7 +1824,15 @@ void CMainFrame::OnTimer(UINT_PTR nIDEvent)
                 g_bNoDuration = rtDur <= 0;
                 m_wndSeekBar.Enable(!g_bNoDuration);
                 m_wndSeekBar.SetRange(0, rtDur);
-                m_wndSeekBar.SetPos(rtNow);
+                
+				if (m_seekToTime >= 0)
+				{
+					m_wndSeekBar.SetPos(m_seekToTime);
+				}
+				else
+				{
+					m_wndSeekBar.SetPos(rtNow);
+				}
                 m_OSD.SetRange(0, rtDur);
                 m_OSD.SetPos(rtNow);
                 m_Lcd.SetMediaRange(0, rtDur);
@@ -2757,12 +2767,25 @@ void CMainFrame::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
     if (pScrollBar->IsKindOf(RUNTIME_CLASS(CVolumeCtrl))) {
         OnPlayVolume(0);
     } else if (pScrollBar->IsKindOf(RUNTIME_CLASS(CPlayerSeekBar)) && GetLoadState() == MLS::LOADED) {
-        SeekTo(m_wndSeekBar.GetPos());
+        SeekTo(GetPos());
     } else if (*pScrollBar == *m_pVideoWnd) {
         SeekTo(m_OSD.GetPos());
     }
 
     __super::OnHScroll(nSBCode, nPos, pScrollBar);
+}
+
+BOOL CMainFrame::OnInternalMouseWheel(UINT nFlags, short zDelta, CPoint point)
+{
+	const auto& s = AfxGetAppSettings();
+
+	REFERENCE_TIME rtSeekTo = zDelta * -1000000i64;
+
+	const REFERENCE_TIME rtPos = GetPos();
+	rtSeekTo += rtPos;
+
+	SeekTo(rtSeekTo);
+	return true;
 }
 
 void CMainFrame::OnInitMenu(CMenu* pMenu)
@@ -4815,7 +4838,7 @@ CString CMainFrame::GetVidPos() const
     if ((GetPlaybackMode() == PM_FILE) || (GetPlaybackMode() == PM_DVD)) {
         __int64 start, stop, pos;
         m_wndSeekBar.GetRange(start, stop);
-        pos = m_wndSeekBar.GetPos();
+        pos = GetPos();
 
         DVD_HMSF_TIMECODE tcNow = RT2HMSF(pos);
         DVD_HMSF_TIMECODE tcDur = RT2HMSF(stop);
@@ -7049,7 +7072,7 @@ void CMainFrame::OnPlayStop()
             __int64 start, stop;
             m_wndSeekBar.GetRange(start, stop);
             if (!IsPlaybackCaptureMode()) {
-                m_wndStatusBar.SetStatusTimer(m_wndSeekBar.GetPos(), stop, IsSubresyncBarVisible(), GetTimeFormat());
+                m_wndStatusBar.SetStatusTimer(GetPos(), stop, IsSubresyncBarVisible(), GetTimeFormat());
             }
 
             SetAlwaysOnTop(AfxGetAppSettings().iOnTop);
@@ -7128,7 +7151,7 @@ void CMainFrame::OnPlayFramestep(UINT nID)
         if (m_nStepForwardCount == 0) {
             if (GetPlaybackMode() == PM_DVD) {
                 OnTimer(TIMER_STREAMPOSPOLLER);
-                m_rtStepForwardStart = m_wndSeekBar.GetPos();
+                m_rtStepForwardStart = GetPos();
             } else {
                 m_pMS->GetCurrentPosition(&m_rtStepForwardStart);
             }
@@ -7171,7 +7194,7 @@ void CMainFrame::OnPlayFramestep(UINT nID)
         } else if (GetPlaybackMode() == PM_DVD) {
             // IMediaSeeking doesn't work well with DVD Navigator
             OnTimer(TIMER_STREAMPOSPOLLER);
-            rtCurPos = m_wndSeekBar.GetPos();
+            rtCurPos = GetPos();
         } else {
             m_pMS->GetCurrentPosition(&rtCurPos);
         }
@@ -7229,7 +7252,7 @@ void CMainFrame::OnPlaySeek(UINT nID)
         rtSeekTo /= 10000i64 * 100;
     }
 
-    const REFERENCE_TIME rtPos = m_wndSeekBar.GetPos();
+    const REFERENCE_TIME rtPos = GetPos();
     rtSeekTo += rtPos;
 
     if (s.bFastSeek && !m_kfs.empty()) {
@@ -7248,7 +7271,7 @@ void CMainFrame::OnPlaySeek(UINT nID)
 
 void CMainFrame::OnPlaySeekSet()
 {
-    const REFERENCE_TIME rtPos = m_wndSeekBar.GetPos();
+    const REFERENCE_TIME rtPos = GetPos();
     REFERENCE_TIME rtStart, rtStop;
     m_wndSeekBar.GetRange(rtStart, rtStop);
     if (rtPos != rtStart) {
@@ -7275,7 +7298,7 @@ void CMainFrame::OnPlaySeekKey(UINT nID)
 {
     if (!m_kfs.empty()) {
         bool bSeekingForward = (nID == ID_PLAY_SEEKKEYFORWARD);
-        const REFERENCE_TIME rtPos = m_wndSeekBar.GetPos();
+        const REFERENCE_TIME rtPos = GetPos();
         REFERENCE_TIME rtSeekTo = rtPos - (bSeekingForward ? 0 : (GetMediaState() == State_Running) ? 10000000 : 10000);
         std::pair<REFERENCE_TIME, REFERENCE_TIME> keyframes;
 
@@ -8400,7 +8423,7 @@ void CMainFrame::OnNavigateGoto()
 
     REFERENCE_TIME start, dur = -1;
     m_wndSeekBar.GetRange(start, dur);
-    CGoToDlg dlg(m_wndSeekBar.GetPos(), dur, atpf > 0.0 ? (1.0 / atpf) : 0.0);
+    CGoToDlg dlg(GetPos(), dur, atpf > 0.0 ? (1.0 / atpf) : 0.0);
     if (IDOK != dlg.DoModal() || dlg.m_time < 0) {
         return;
     }
@@ -13715,7 +13738,13 @@ void CMainFrame::SetAudioTrackIdx(int index)
 
 REFERENCE_TIME CMainFrame::GetPos() const
 {
-    return (GetLoadState() == MLS::LOADED ? m_wndSeekBar.GetPos() : 0);
+	if (GetLoadState() != MLS::LOADED)
+		return 0;
+
+	if (m_seekToTime >= 0)
+		return m_seekToTime;
+
+    return m_wndSeekBar.GetPos();
 }
 
 REFERENCE_TIME CMainFrame::GetDur() const
@@ -13780,8 +13809,45 @@ REFERENCE_TIME CMainFrame::GetClosestKeyFrame(REFERENCE_TIME rtTarget) const
     return ret;
 }
 
-void CMainFrame::SeekTo(REFERENCE_TIME rtPos, bool bShowOSD /*= true*/)
+void CMainFrame::SeekTo(REFERENCE_TIME rt, bool bShowOSD /*= true*/)
 {
+	if (rt < 0) {
+		rt = 0;
+	}
+
+	const auto& s = AfxGetAppSettings();
+	if (s.bUseDeferredSeek)
+	{
+		m_seekToTime = rt;
+		m_bSeekShowOSD = bShowOSD;
+
+		if (!IsPlaybackCaptureMode()) {
+			__int64 start, stop;
+			m_wndSeekBar.GetRange(start, stop);
+			if (m_seekToTime > stop) {
+				m_seekToTime = stop;
+			}
+			m_wndStatusBar.SetStatusTimer(m_seekToTime, stop, IsSubresyncBarVisible(), GetTimeFormat());
+
+			if (bShowOSD) {
+				m_OSD.DisplayMessage(OSD_TOPLEFT, m_wndStatusBar.GetStatusTimer(), 1500);
+			}
+		}
+
+		m_timerOneTime.Subscribe(TimerOneTimeSubscriber::SEEK_TIMEOUT,
+			[this] { ActualSeekTo(this->m_seekToTime, this->m_bSeekShowOSD); },
+			500);
+	}
+	else 
+	{
+		ActualSeekTo(rt, bShowOSD);
+	}
+}
+
+void CMainFrame::ActualSeekTo(REFERENCE_TIME rtPos, bool bShowOSD /*= true*/)
+{
+	m_seekToTime = -1;
+
     ASSERT(m_pMS != nullptr);
     if (m_pMS == nullptr) {
         return;
@@ -15062,7 +15128,7 @@ LPCTSTR CMainFrame::GetDVDAudioFormatName(const DVD_AudioAttributes& ATR) const
 afx_msg void CMainFrame::OnGotoSubtitle(UINT nID)
 {
     if (!m_pSubStreams.IsEmpty() && !IsPlaybackCaptureMode()) {
-        m_rtCurSubPos = m_wndSeekBar.GetPos();
+        m_rtCurSubPos = GetPos();
         m_lSubtitleShift = 0;
         m_nCurSubtitle = m_wndSubresyncBar.FindNearestSub(m_rtCurSubPos, (nID == ID_GOTO_NEXT_SUB));
         if (m_nCurSubtitle >= 0 && m_pMS) {

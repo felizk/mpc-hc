@@ -42,6 +42,7 @@ CPPageTweaks::CPPageTweaks()
     , m_bHideWindowedMousePointer(TRUE)
     , m_nOSDSize(0)
     , m_fFastSeek(FALSE)
+	, m_bUseDeferredSeek(TRUE)
     , m_fShowChapters(TRUE)
     , m_fLCDSupport(FALSE)
 {
@@ -69,7 +70,8 @@ void CPPageTweaks::DoDataExchange(CDataExchange* pDX)
     DDX_Check(pDX, IDC_FASTSEEK_CHECK, m_fFastSeek);
     DDX_Check(pDX, IDC_CHECK2, m_fShowChapters);
     DDX_Check(pDX, IDC_CHECK_LCD, m_fLCDSupport);
-    DDX_Check(pDX, IDC_CHECK3, m_bHideWindowedMousePointer);
+	DDX_Check(pDX, IDC_CHECK3, m_bHideWindowedMousePointer);
+	DDX_Check(pDX, IDC_CHECK9, m_bUseDeferredSeek);
 }
 
 int CALLBACK EnumFontProc(ENUMLOGFONT FAR* lf, NEWTEXTMETRIC FAR* tm, int FontType, LPARAM dwData)
@@ -116,6 +118,8 @@ BOOL CPPageTweaks::OnInitDialog()
     m_FastSeekMethod.AddString(ResStr(IDS_FASTSEEK_LATEST));
     m_FastSeekMethod.AddString(ResStr(IDS_FASTSEEK_NEAREST));
     m_FastSeekMethod.SetCurSel(s.eFastSeekMethod);
+
+	m_bUseDeferredSeek = s.bUseDeferredSeek;
 
     m_fShowChapters = s.fShowChapters;
 
@@ -182,6 +186,8 @@ BOOL CPPageTweaks::OnApply()
 
     s.bFastSeek = !!m_fFastSeek;
     s.eFastSeekMethod = static_cast<decltype(s.eFastSeekMethod)>(m_FastSeekMethod.GetCurSel());
+
+	s.bUseDeferredSeek = !!m_bUseDeferredSeek;
 
     s.bHideWindowedMousePointer = !!m_bHideWindowedMousePointer;
 

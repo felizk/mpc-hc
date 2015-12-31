@@ -154,6 +154,7 @@ CAppSettings::CAppSettings()
     , nJumpDistL(DEFAULT_JUMPDISTANCE_3)
     , bFastSeek(true)
     , eFastSeekMethod(FASTSEEK_NEAREST_KEYFRAME)
+	, bUseDeferredSeek(true)
     , fShowChapters(true)
     , bNotifySkype(false)
     , fPreventMinimize(false)
@@ -859,8 +860,9 @@ void CAppSettings::SaveSettings()
     pApp->WriteProfileInt(IDS_R_SETTINGS, IDS_RS_LANGUAGE, language);
     pApp->WriteProfileInt(IDS_R_SETTINGS, IDS_RS_FASTSEEK, bFastSeek);
     pApp->WriteProfileInt(IDS_R_SETTINGS, IDS_RS_FASTSEEK_METHOD, eFastSeekMethod);
-    pApp->WriteProfileInt(IDS_R_SETTINGS, IDS_RS_SHOW_CHAPTERS, fShowChapters);
-
+	pApp->WriteProfileInt(IDS_R_SETTINGS, IDS_RS_DEFERRED_SEEK, bUseDeferredSeek);
+	pApp->WriteProfileInt(IDS_R_SETTINGS, IDS_RS_SHOW_CHAPTERS, fShowChapters);
+	
 
     pApp->WriteProfileInt(IDS_R_SETTINGS, IDS_RS_LCD_SUPPORT, fLCDSupport);
 
@@ -1688,6 +1690,7 @@ void CAppSettings::LoadSettings()
     bFastSeek             = !!pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_FASTSEEK, TRUE);
     eFastSeekMethod       = static_cast<decltype(eFastSeekMethod)>(
                                 pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_FASTSEEK_METHOD, FASTSEEK_NEAREST_KEYFRAME));
+    bUseDeferredSeek      = !!pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_DEFERRED_SEEK, TRUE);
     fShowChapters         = !!pApp->GetProfileInt(IDS_R_SETTINGS, IDS_RS_SHOW_CHAPTERS, TRUE);
 
 
